@@ -13,7 +13,7 @@ export interface BacklinkRecord {
 /** Source path Constellation indexes for the result record's leaderboard link. */
 const RESULT_TARGET_PATH = 'puzzleTarget';
 
-async function get(path: string, params: Record<string, string>): Promise<any | null> {
+async function get(path: string, params: Record<string, string>): Promise<unknown> {
   const url = new URL(path, CONSTELLATION_BASE);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   try {
@@ -27,11 +27,11 @@ async function get(path: string, params: Record<string, string>): Promise<any | 
 
 /** Distinct DIDs linking to `target`. Null on failure. */
 async function countDistinctDids(target: string, collection: string, dottedPath: string): Promise<number | null> {
-  const data = await get('/links/count/distinct-dids', {
+  const data = (await get('/links/count/distinct-dids', {
     target,
     collection,
     path: dottedPath.startsWith('.') ? dottedPath : `.${dottedPath}`,
-  });
+  })) as { total?: unknown } | null;
   return typeof data?.total === 'number' ? data.total : null;
 }
 
@@ -47,9 +47,12 @@ async function getBacklinksPage(
     limit: String(opts.limit),
   };
   if (opts.cursor) params.cursor = opts.cursor;
-  const data = await get('/xrpc/blue.microcosm.links.getBacklinks', params);
+  const data = (await get('/xrpc/blue.microcosm.links.getBacklinks', params)) as
+    | { records?: unknown; cursor?: unknown }
+    | null;
   if (!data || !Array.isArray(data.records)) return null;
-  return { records: data.records as BacklinkRecord[], cursor: data.cursor ?? null };
+  const cursor = typeof data.cursor === 'string' ? data.cursor : null;
+  return { records: data.records as BacklinkRecord[], cursor };
 }
 
 /**
