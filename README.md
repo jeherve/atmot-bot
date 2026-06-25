@@ -52,4 +52,11 @@ npm run deploy
 The free Workers plan is sufficient: each language runs in its own scheduled
 invocation, so each gets the full 50-subrequest budget. Solver counting samples up
 to `SOLVER_SAMPLE_CAP` (20) records per language; beyond that the count is hedged
-(e.g. "20+"). On the paid plan, raise `SOLVER_SAMPLE_CAP` in `src/config.ts` to ~200.
+(e.g. "20+").
+
+Each sampled record costs ~2 subrequests (DID-document resolution + the record
+read), so the default cap of 20 already uses most of the per-invocation budget on
+the free plan — keep headroom for the count, session, idempotency check, and
+publish (~6 more). On the paid plan you can raise `SOLVER_SAMPLE_CAP` in
+`src/config.ts`, but size it against the subrequest cost (~2 per record), not just
+the desired sample size.
