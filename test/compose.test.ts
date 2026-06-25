@@ -8,6 +8,17 @@ const y = (players: number | null, solvers: number, sampled = false): YesterdayC
   sampled,
 });
 
+/** Collect the tag names from a post's #tag facets, in order. */
+function tagNames(facets: ReturnType<typeof composePost>['facets']): string[] {
+  const names: string[] = [];
+  for (const f of facets) {
+    for (const feat of f.features) {
+      if (feat.$type === 'app.bsky.richtext.facet#tag') names.push(feat.tag);
+    }
+  }
+  return names;
+}
+
 describe('postMarker', () => {
   it('is language-specific and carries the puzzle number', () => {
     expect(postMarker('en', 5)).toBe('AT Mot #5');
@@ -25,8 +36,17 @@ describe('composePost — EN', () => {
         `#WordGame #atproto`,
     );
     expect(langs).toEqual(['en']);
-    expect(facets).toHaveLength(1);
-    expect(facets[0]!.features[0]!.uri).toBe(ORIGIN);
+    // One homepage link facet, plus a #tag facet per hashtag.
+    const links = facets.filter((f) => f.features[0]!.$type === 'app.bsky.richtext.facet#link');
+    expect(links).toHaveLength(1);
+    expect(links[0]!.features[0]).toEqual({ $type: 'app.bsky.richtext.facet#link', uri: ORIGIN });
+    expect(tagNames(facets)).toEqual(['WordGame', 'atproto']);
+  });
+
+  it('hashtags become #tag facets; the puzzle "#N" does not', () => {
+    const { facets } = composePost({ lang: 'en', todayN: 3, yesterday: y(2, 2) });
+    expect(tagNames(facets)).toEqual(['WordGame', 'atproto']);
+    expect(tagNames(facets)).not.toContain('3');
   });
 
   it('singular solver, no non-solvers', () => {
@@ -80,7 +100,7 @@ describe('composePost — EN', () => {
 
 describe('composePost — FR', () => {
   it('normal: solvers + non-solvers', () => {
-    const { text, langs } = composePost({ lang: 'fr', todayN: 5, yesterday: y(23, 18) });
+    const { text, langs, facets } = composePost({ lang: 'fr', todayN: 5, yesterday: y(23, 18) });
     expect(text).toBe(
       `🟩 AT Mot n°5 est en ligne ! Six essais pour deviner le mot de cinq lettres du jour.\n` +
         `Bravo aux 18 qui ont trouvé le mot d'hier. Et aux 5 qui ont séché, meilleure chance aujourd'hui !\n` +
@@ -88,6 +108,7 @@ describe('composePost — FR', () => {
         `#JeuDeMots #atproto`,
     );
     expect(langs).toEqual(['fr']);
+    expect(tagNames(facets)).toEqual(['JeuDeMots', 'atproto']);
   });
 
   it('singular solver uses "au seul joueur" + "a trouvé"', () => {

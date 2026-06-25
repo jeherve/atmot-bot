@@ -1,5 +1,5 @@
 import { ORIGIN, type Lang, type YesterdayCounts } from './config.js';
-import { linkFacet, type FacetLink } from './facets.js';
+import { linkFacet, tagFacets, type Facet } from './facets.js';
 
 export interface ComposeInput {
   lang: Lang;
@@ -10,7 +10,7 @@ export interface ComposeInput {
 
 export interface ComposedPost {
   text: string;
-  facets: FacetLink[];
+  facets: Facet[];
   langs: [Lang];
 }
 
@@ -74,5 +74,10 @@ export function composePost(input: ComposeInput): ComposedPost {
   const tags = lang === 'fr' ? '#JeuDeMots #atproto' : '#WordGame #atproto';
 
   const text = [inviteLine(lang, todayN), congrats, playLine, tags].filter(Boolean).join('\n');
-  return { text, facets: linkFacet(text, ORIGIN), langs: [lang] };
+  // Homepage link + a #tag facet per hashtag, sorted by position so the byte
+  // ranges appear in document order.
+  const facets = [...linkFacet(text, ORIGIN), ...tagFacets(text)].sort(
+    (a, b) => a.index.byteStart - b.index.byteStart,
+  );
+  return { text, facets, langs: [lang] };
 }
