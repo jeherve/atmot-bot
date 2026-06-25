@@ -1,0 +1,24 @@
+{
+  "name": "atmot-bot",
+  "version": "1.0.0",
+  "description": "Daily Bluesky bot for AT Mot — invites players and congratulates yesterday's solvers.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@atcute/atproto": "^4.0.2",
+    "@atcute/client": "^5.1.0",
+    "@atcute/identity-resolver": "^2.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240000.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9",
+    "wrangler": "^4.103.0"
+  }
+}
