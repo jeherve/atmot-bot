@@ -38,7 +38,12 @@ export const CONSTELLATION_BASE = 'https://constellation.microcosm.blue';
 export const APPVIEW_URL = 'https://public.api.bsky.app';
 export const USER_AGENT = `atmot-bot/1.0 (+${ORIGIN}; daily word game bot)`;
 
-/** Free Workers plan: keep ~2 subrequests/record under the 50/invocation cap. */
+/**
+ * Solver sample size. Each record costs ~2 subrequests (DID-doc resolution +
+ * record read), so 20 records ≈ 40, leaving ~10 of the free plan's 50/invocation
+ * for the count, session, idempotency check, and publish. Raise with care, and
+ * size it against the ~2-subrequests-per-record cost — not just the sample size.
+ */
 export const SOLVER_SAMPLE_CAP = 20;
 
 /** The result record shape we read from each player's PDS (colours only; subset we use). */
