@@ -10,9 +10,20 @@ export interface Env {
   DRY_RUN?: string;
 }
 
-/** Map the firing cron expression to a language (FR runs one minute after EN). */
-function langForCron(cron: string): Lang {
-  return cron.startsWith('11 ') ? 'fr' : 'en';
+/**
+ * Map the firing cron expression to a language. Keyed on the exact expressions
+ * in wrangler.toml (EN 00:10 UTC, FR 00:11 UTC); an unrecognized cron throws so
+ * a trigger misconfiguration fails loudly instead of silently posting English.
+ */
+const CRON_LANG: Record<string, Lang> = {
+  '10 0 * * *': 'en',
+  '11 0 * * *': 'fr',
+};
+
+export function langForCron(cron: string): Lang {
+  const lang = CRON_LANG[cron];
+  if (!lang) throw new Error(`[atmot-bot] unmapped cron expression: ${JSON.stringify(cron)}`);
+  return lang;
 }
 
 export default {
