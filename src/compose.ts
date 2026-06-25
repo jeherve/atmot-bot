@@ -32,6 +32,8 @@ function congratsLine(lang: Lang, c: YesterdayCounts): string | null {
   if (players == null || players === 0) return null;
 
   if (solvers === 0) {
+    // An incomplete sample can't prove nobody won — only claim it when we're sure.
+    if (sampled) return null;
     return lang === 'fr'
       ? `Personne n'a trouvé le mot d'hier. Nouveau départ aujourd'hui !`
       : `Nobody cracked yesterday's word. Fresh start today!`;

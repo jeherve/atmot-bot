@@ -56,8 +56,8 @@ export interface ResultRecord {
 export interface YesterdayCounts {
   /** Distinct players who recorded a result (wins + losses); null if Constellation was unreachable. */
   players: number | null;
-  /** Players who solved, counted from the sampled records (≤ SOLVER_SAMPLE_CAP). */
+  /** Distinct DIDs that solved, from the sample (≤ SOLVER_SAMPLE_CAP); clamped to `players`. */
   solvers: number;
-  /** True if the sample hit the cap (more results may exist than were counted). */
+  /** True when the sample is incomplete (truncated page or unresolved players); compose then hedges. */
   sampled: boolean;
 }

@@ -52,17 +52,37 @@ async function getBacklinksPage(
   return { records: data.records as BacklinkRecord[], cursor: data.cursor ?? null };
 }
 
-async function collectBacklinks(target: string, collection: string, path: string, cap: number): Promise<BacklinkRecord[]> {
+/**
+ * Up to `cap` backlink records. `truncated` is true when the sample is known to
+ * be incomplete — more than `cap` records exist, a page fetch failed mid-walk,
+ * or pages remained when the page budget ran out — so callers can hedge.
+ */
+async function collectBacklinks(
+  target: string,
+  collection: string,
+  path: string,
+  cap: number,
+): Promise<{ records: BacklinkRecord[]; truncated: boolean }> {
   const out: BacklinkRecord[] = [];
   let cursor: string | undefined;
-  for (let i = 0; i < 10 && out.length < cap; i++) {
-    const page = await getBacklinksPage(target, collection, path, { limit: Math.min(100, cap), cursor });
-    if (!page) break;
+  let incomplete = false;
+  for (let i = 0; i < 10; i++) {
+    if (out.length > cap) break; // already have more than we need; the rest is truncated
+    // Fetch one extra so we can distinguish "exactly cap" from "more than cap".
+    const page = await getBacklinksPage(target, collection, path, { limit: Math.min(100, cap + 1), cursor });
+    if (!page) {
+      incomplete = true; // a page fetch failed; we can't be sure we have everything
+      break;
+    }
     out.push(...page.records);
-    if (!page.cursor) break;
+    if (!page.cursor) {
+      cursor = undefined;
+      break;
+    }
     cursor = page.cursor;
   }
-  return out.slice(0, cap);
+  const truncated = incomplete || out.length > cap || cursor !== undefined;
+  return { records: out.slice(0, cap), truncated };
 }
 
 /** Distinct players who recorded a result for this puzzle (wins + losses). Null on failure. */
@@ -70,8 +90,12 @@ export function dailyPlayerCount(lang: Lang, puzzleNumber: number): Promise<numb
   return countDistinctDids(puzzleTarget(lang, puzzleNumber), COLLECTION.result, RESULT_TARGET_PATH);
 }
 
-/** Up to `cap` result-record backlinks for this puzzle. */
-export function dailyResultBacklinks(lang: Lang, puzzleNumber: number, cap: number): Promise<BacklinkRecord[]> {
+/** Up to `cap` result-record backlinks for this puzzle, plus a `truncated` flag. */
+export function dailyResultBacklinks(
+  lang: Lang,
+  puzzleNumber: number,
+  cap: number,
+): Promise<{ records: BacklinkRecord[]; truncated: boolean }> {
   return collectBacklinks(puzzleTarget(lang, puzzleNumber), COLLECTION.result, RESULT_TARGET_PATH, cap);
 }
 
